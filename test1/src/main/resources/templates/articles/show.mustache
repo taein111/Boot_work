@@ -1,5 +1,6 @@
 {{>layouts/header}}
 
+{{#article}}
 <table class="table">
     <thead>
     <tr>
@@ -11,11 +12,13 @@
     </thead>
     <tbody>
     <tr>
-        <th>{{article.id}}</th>
-        <td>{{article.title}}</td>
-        <td>{{article.content}}</td>
+        <th>{{id}}</th>
+        <td>{{title}}</td>
+        <td>{{content}}</td>
     </tr>
     </tbody>
 </table>
-
+{{/article}}
+<a href="/articles">목록보기</a>
+<a href="/articles/{{article.id}}/edit" class="btn btn-primary">수정하기</a>
 {{>layouts/footer}}

@@ -7,16 +7,20 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.stereotype.Controller;
 
 
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
+@AllArgsConstructor
+@Getter
+@NoArgsConstructor
+@ToString
+
 public class Article {
+
     @GeneratedValue
     @Id
     private Long id;
@@ -27,6 +31,5 @@ public class Article {
     @Column
     private String content;
 
-
-
 }
+

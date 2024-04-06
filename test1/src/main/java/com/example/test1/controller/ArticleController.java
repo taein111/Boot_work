@@ -32,7 +32,7 @@ public class ArticleController {
         //2. 레퍼지토리를 통해 엔티티 디비에 저장하기
         Article saved = articleRepository.save(article);
         log.info(saved.toString());
-        return "";
+        return "redirect:/articles/"+saved.getId();
     }
 
     @GetMapping("/articles/{id}") //데이터 조회 요청 접수
@@ -53,10 +53,35 @@ public class ArticleController {
         List<Article> articleList = articleRepository.findAll();
         log.info(articleList.toString());
         //2. 모델에 데이터 등록하기
-        model.addAttribute("articleList",articleList);
+        model.addAttribute("article",articleList);
         log.info(model.toString());
         //3. 뷰 페이지 설정하기
         return "articles/index";
     }
 
+    //수정 페이지 만들고 기존 데이터 불러오기
+    @GetMapping("articles/{id}/edit")
+    public String edit(@PathVariable Long id, Model model){
+        // 1. 수정할 데이터 가져오기
+        Article articleEntity =articleRepository.findById(id).orElse(null);
+        model.addAttribute("article", articleEntity);
+        return "articles/edit";
+    }
+
+    //불러온 데이터를 수정에 db에 반영하게 뷰 페이지에 뿌리기
+    @PostMapping("/articles/update")
+    public String update(ArticleForm form){
+        log.info(form.toString());
+        //1. dto를 엔티티로 변환
+        Article articleEntity = form.toEntity();
+        log.info(articleEntity.toString());
+        //2. 엔티티를 db에 저장(레퍼지토리)
+        //2-1 . db에서 기존 데이터 가져오기
+        Article target = articleRepository.findById(articleEntity.getId()).orElse(null);
+        //2-2. 기존 데이터 값 갱신하기
+        if(target != null){
+            articleRepository.save(articleEntity);
+        }
+        return "redirect:/articles/"+articleEntity.getId();
+    }
 }

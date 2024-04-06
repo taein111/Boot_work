@@ -9,13 +9,14 @@
     </tr>
     </thead>
     <tbody>
-    {{#articleList}}
+    {{#article}}
         <tr>
             <th>{{id}}</th>
-            <th>{{title}}</th>
+            <th><a href="articles/{{id}}">{{title}}</a></th>
             <th>{{content}}</th>
         </tr>
-    {{/articleList}}
+    {{/article}}
     </tbody>
 </table>
+<a href="/articles/new">새 글 작성</a>
 {{>layouts/footer}}
