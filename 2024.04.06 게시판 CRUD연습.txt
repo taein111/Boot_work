@@ -127,3 +127,23 @@ Spring.jpa.defer-datasource-initialization=true  <<--data.sql 생성 시 프로�
 
 
 
+--------------여기까지 데이터 수정하기---------------------------------------
+
+!!데이터 삭제하기!! public String delete(@PathBVartable Long id, RedirectAttributes rttr)
+-> show 페이지에서 delete 버튼 만들기, article/{{id}}/delete 맵핑
+-> 컨트롤러에서 delete 메서드 만들고 id값 받아오기 
+-> 삭제할 데이터 가져오기
+ 	: Article target = articleRepository.findById(id).orElse(null);
+-> 대상 엔티티  삭제하기
+	: if(target != null){
+		articleRepository.delete(target);
+		rttr.addFlashAttribute("msg","삭제됐습니다) -> 템플릿에 msg 영역 추가.
+	}
+-> 결과 페이지로 리다이렉트
+	: return "redirect:/articles";
+
++++ RedirectAttributes
+	: 리다이렉트 페이지에서 일회성 데이터를 관리하는 객체. 
+	: addFlashAttrubute()메서드로 리다이렉트된 페이지에서 사용할 일회성 데이터를 등록
+
+

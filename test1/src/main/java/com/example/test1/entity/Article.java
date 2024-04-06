@@ -2,10 +2,7 @@ package com.example.test1.entity;
 
 
 import com.example.test1.dto.ArticleForm;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +18,7 @@ import org.springframework.stereotype.Controller;
 
 public class Article {
 
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)//db가 id 자동생성
     @Id
     private Long id;
 
