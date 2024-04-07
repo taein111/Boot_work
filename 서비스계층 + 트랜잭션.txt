@@ -1,0 +1,103 @@
+!! 서비스계층 / 트랜잭션 !!
+
+서비스란?
+ - 컨트롤러와 레퍼지토리 사이에 위치하는 계층으로 서버의 핵심기능(비즈니스 로직)을 처리하는
+	순서를 총괄한다.
+
+트랜잭션이란?
+ - 모두 성공해야하는 일련의 과정 ( 쪼갤 수 없는 업무 처리의 최소 단위 )
+  => 서비스 업무 처리는 트랜잭션 단위로 진행된다. 
+
+==> 일반적으로 웹서비스는 컨트롤러와 레퍼지토리 사이에 서비스 계층을 두어 역할을 분업한다.
+
+<<<컨트롤러 -------- 서비스 ------------레퍼지토리 >>
+
+
+!!서비스 계층 만들기 !! 
+
+1. ArticleApiController 코드 주석 처리 
+
+2. 객체 주입된 레퍼지토리를 서비스로 바꾼다 
+ - private ArticleService articleService
+ 
+3. 서비스 패키지와 ArticleService클래스 만든다. + @Service 어노테이션
+
+4. 서비스 클래스에서 레퍼지토리와 협업할 수 있도록 ArticleRepository 객체 주입한다(Autowired)
+
+5. 주석을 메서드마다 풀면서 서비스객체를 이용한 crud기능을 리팩터링한다.
+
+//    //PATCH
+//    @PatchMapping("api/articles/{id}")
+//    public ResponseEntity<Article> update(@PathVariable Long id, @RequestBody ArticleForm dto){ //요청 메시지의 본문을 가져오기 위한 Requestbody
+//        //1. dto -> 엔티티 변환하기
+//        Article article = dto.toEntity();
+//        log.info("id: {}, article: {}", id, article.toString());
+//        //2. 타깃 조회하기
+//        Article target = articleRepository.findById(id).orElse(null);
+//        //3. 잘못된 요청 처리하기
+//        if(target ==null || id != article.getId()){
+//            //400, 잘못된 요청 응답!
+//            log.info("잘못된 요청 ! id: {}, article: {}", id, article.toString());
+//            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+//        }
+//        //4. 업데이트 및 정상 응답(200)하기
+//        target.patch(article); //기존 데이터 target에  patch 메서드로 수정할 데이터 article로 바꿔준다
+//        Article updated = articleRepository.save(target);
+//        return  ResponseEntity.status(HttpStatus.OK).body(updated);
+//    }
+//
+//
+//    //DELETE
+//    @DeleteMapping("/api/articles/{id}")
+//    public ResponseEntity<Article> delete(@PathVariable Long id){
+//        //1.대상 찾기
+//        Article target = articleRepository.findById(id).orElse(null);
+//        //2.잘못된 요청 처리하기
+//        if(target == null){
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+//        }
+//        //3. 대상 삭제하기
+//        articleRepository.delete(target);
+//        return ResponseEntity.status(HttpStatus.OK).build();
+//    }
+
+
+
+
+
+---------------------여기까지 서비스계층 만들기 -----------------------------------
+
+
+!! 트랜잭션 !!
+- 트랜잭션은 반드시 성공해야만 하는 일련의 과정이다. 
+성공하지 못하면 원래 상태로 복구, 롤백된다. 
+
+<연습하기>
+1. 게시판에 데이터 3개를 한꺼번에 생성 요청하기
+	: post 매핑으로 transactiontest 메서드 생성 ( 서비스가 처리하기 위한)
+ @PostMapping("/api/transaction-test")
+    public ResponseEntity<List<Article>> transactionTest(@RequestBody List<ArticleForm> dtos){
+        List<Article> createList = articleService.createArticles(dtos);
+        return (createList != null) ?
+                ResponseEntity.status(HttpStatus.OK).body(createList) :
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+     }
+
+2. 데이터를 db에 저장하는 과정에서 의도적으로 오류 발생시키기.
+	: 서비스 클래스에서 트랜잭션 메서드 생성한다.
+ @Transactional
+    public List<Article> createArticles(List<ArticleForm> dtos) {
+        //1. dto 묶음을 엔티티 묶음으로 변환하기
+        List<Article> articleList = dtos.stream()
+                .map(dto -> dto.toEntity())
+                .collect(Collectors.toList());
+        //2. 엔티티 묶음을 db에 저장하기
+        articleList.stream()
+                .forEach(article -> articleRepository.save(article));
+        //3. 강제 예외 발생시키기
+        articleRepository.findById(-1L)
+                .orElseThrow(() -> new IllegalArgumentException("결제 실패"));
+        //4. 결과값 반환하기
+        return articleList;
+    }
+3. 어떻게 롤백되는지 확인하기.
