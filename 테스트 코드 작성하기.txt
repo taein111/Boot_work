@@ -1,0 +1,90 @@
+!! 테스트 코드 작성하기 !!
+
+테스트란?
+ - 프로그램 품질을 검증하는 것, 의도대로 프로그램이 잘 동작하는지 확인하는 과정
+
+보통 3 단계로 작성한다.
+
+1. 예상데이터 작성하기
+2. 실제데이터 획득하기
+3. 예상데이터와 실제데이터 비교해 검증하기
+
+-------- 연습
+----------------------------------------------------------------------------------------
+<테스트 코드 기본 틀 만들기>
+service 클래스에서 테스트하고싶은 메서드에 generate -> test 선택
+
+servicetest 클래스 자동생성 -> SpringbootTest 어노테이션 붙이기
+
+service 클래스를 테스트 하기 위해 service 객체 선언, autowired
+
+@Test
+    void index() {
+        //1. 예상 데이터 작성하기
+        Article a = new Article(1L, "가가가가", "1111");
+        Article b = new Article(2L, "나나나나", "2222");
+        Article c = new Article(3L, "다다다다", "3333");
+        List<Article> expected = new ArrayList<Article>(Arrays.asList(a, b, c));
+        //2. 실제 데이터 획득하기
+        List<Article> articles = articleService.index();
+        //3. 예상 데이터와 실제 데이터 비교해 검증하기
+        assertEquals(expected.toString(), articles.toString());
+    }
+----------------------------------------------------------------------------------------
+@Test
+    void show_성공_존재하는_id_입력() {
+        //1. 예상 데이터 작성하기
+        Long id = 1L;
+        Article expected = new Article(id, "가가가가", "1111");
+        //2. 실제 데이터 획득하기
+        Article article = articleService.show(id);
+        //3. 예상 데이터와 실제 데이터 비교해 검증하기
+        assertEquals(expected.toString(), article.toString());
+    }
+----------------------------------------------------------------------------------------
+    @Test
+    void show_실패_존재하지_않는_id_입력() {
+        //1. 예상 데이터 작성하기
+        Long id = -1L;
+        Article expected = null;
+        //2. 실제 데이터 획득하기
+        Article article = articleService.show(id);
+        //3. 예상 데이터와 실제 데이터 비교해 검증하기
+        assertEquals(expected, article);
+    }
+
+----------------------------------------------------------------------------------------
+
+@Transactional
+@Test
+    void create_성공_title과_content만_있는_dto_입력() {
+        //1. 예상 데이터 작성하기
+        String title = "라라라라";
+        String content = "4444";
+        ArticleForm dto = new ArticleForm(null,title,content);
+        Article expected = new Article(4L, title, content);
+        //2. 실제 데이터 획득하기
+        Article article = articleService.create(dto);
+        //3. 예상 데이터와 실제 데이터 비교해 검증하기
+        assertEquals(expected.toString(), article.toString());
+    }
+----------------------------------------------------------------------------------------
+    @Test
+    void create_실패_id가_포함된_dto_입력() {
+        //1. 예상 데이터 작성하기
+        Long id = 4L;
+        String title = "라라라라";
+        String content = "4444";
+        ArticleForm dto = new ArticleForm(id,title,content);
+        Article expected = null;
+        //2. 실제 데이터 획득하기
+        Article article = articleService.create(dto);
+        //3. 예상 데이터와 실제 데이터 비교해 검증하기
+        assertEquals(expected, article);
+    }
+
+
+
+===> 데이터를 조회하는 테스트를 제외하고 데이터를 생성, 수정, 삭제하는 테스트를 할 때는
+반드시 해당 테스트를 트랜잭션으로 묶어 테스트가 조료한 후 원래대로 돌아갈 수 있게 
+롤백 처리를 해줘야 한다.
