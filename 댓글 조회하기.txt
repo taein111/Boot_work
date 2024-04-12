@@ -1,0 +1,80 @@
+!! 댓글 REST API 구현 !!
+
+댓글 엔티티와 레퍼지토리를 만든 후 , 댓글 REST 컨트롤러 , 서비스 , DTO를 만들어
+댓글 CRUD를 위한 REST API 를 완성한다.
+
+REST 컨트롤러 : 댓글 REST API를 위한 컨트롤러로 서비스와 협업, 클라이언트 요청을 받아 응답하며
+		뷰가 아닌 데이터 반환
+
+서비스 : REST 컨트롤러와 레퍼지토리 사이에 비즈니스 로직, 즉 처리 흐름을 담당하며 예외 상황이 발생했을 때
+	트랜잭션 처리로 변경된 데이터를 롤백한다.
+
+DTO : 사용자에게 보여줄 댓글 정보를 담은 것, 단순히 클라이언트와 서버간에 댓글 JSON 데이터 전송.
+
+-----------------------------------------------------------
+
+<댓글 컨트롤러와 서비스 틀 만들기>
+
+-CommentApiController 클래스 만든 후 RestController 선언  , 서비스 객체 의존성주입
+
+-서비스 클래스 만들기 , 댓글 레퍼지토리, 게시글 레퍼지토리 객체 의존성 주입.
+
+
+<댓글 조회하기>
+
+1. 컨트롤러(CommentApiController)에서 댓글 조회 요청을 받고, 이를 처리하는 메서드를 만든다.
+
+2. 댓글 컨트롤러는 댓글 서비스에 조회 작업을 위임해 얻은 결과를 클라이언트에 응답시킨다.
+
+3. 서비스에 댓글 조회를 위임하게 위해  CommentService의 comments(articleId)메서드를 호출한다.
+comment()메서드의 매개변수로 articleId를 넘긴 이유는 해당 게시글의 id를 알아야 해당 게시글의 댓글을 가져올 수
+있기 때문이다. 메서드의 실행 결과로 반환받은 값은 List<CommentDto> dtos 변수에 저장한다.
+
+@GetMapping("/api/articles/{articleId}/comments")
+    public ResponseEntity<List<CommentDto>> comments(@PathVariable Long articleId){
+        //서비스에 위임
+        List<CommentDto> dtos = commentService.comments(articleId);
+        //결과 응답
+        return ResponseEntity.status(HttpStatus.OK).body(dtos);
+    }
+
+
+4. CommentDto 클래스를 만들어 준다. 이 것은 댓글 엔티티(Comment)를 담을 그릇이다. 따라서 Comment 구조와
+같이 id, articleId, nickname, body 를 필드로 선언한다.
+
+5. 요청을 처리할 서비스를 만들어 준다.
+
+public List<CommentDto> comments(Long articleId) { //게시글 번호를 받는 comments 메서드, 받아서 댓글을 조회한다.
+        //1. 댓글 조회
+        List<Comment> comments = commentRepository.findByArticleId(articleId); // articleId번 게시글의 모든 댓글을 가져온다
+        //2. 엔티티 -> dto 변환
+        List<CommentDto> dtos = new ArrayList<CommentDto>(); //비어있는 리스트 타입 dto 만들기
+        for(int i = 0; i<comments.size(); i++){ //조회한 댓글 엔티티 수만큼 반복하기
+            Comment c = comments.get(i); // 조회한 댓글 엔티티 하나씩 가져오기
+            CommentDto dto = CommentDto.createCommentDto(c); //엔티티를 dto로 변환
+            dtos.add(dto); //변환한 dto를 dtos리스트에 삽입
+        }
+        //3. 결과 반환
+        return dtos;
+    }
+
+
+6. 엔티티를 dto로 변환하기 위해 createCommentDto메서드를 Dto 클래스에서 만들어 준다.
+ public static CommentDto createCommentDto(Comment comment) {
+        return new CommentDto(
+                comment.getId(), //댓글 엔티티의 id
+                comment.getArticle().getId(), // 댓글 엔티티가 속한 부모 게시글의 id
+                comment.getNickname(), //댓글 엔티티의 nickname
+                comment.getBody() // 댓글 엔티티의 body
+        );
+    }
+
+
+
+
+
+
+
+
+
+-------------------------여기 까지 댓글 조회 ----------------------------
