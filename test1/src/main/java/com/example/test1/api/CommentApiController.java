@@ -2,13 +2,14 @@ package com.example.test1.api;
 
 import com.example.test1.dto.CommentDto;
 import com.example.test1.service.CommentService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@Slf4j
 @RestController
 public class CommentApiController {
     @Autowired
@@ -33,5 +34,22 @@ public class CommentApiController {
     }
 
     //3. 댓글 수정
+
+    @PatchMapping("/api/comments/{id}")
+    public ResponseEntity<CommentDto> update(@PathVariable Long id, @RequestBody CommentDto dto){
+        //서비스에 위임
+        CommentDto updateDto = commentService.update(id, dto);//몇번 댓글을 어떤내용으로 수정해야할지 알아야 하기때문에 id 와 dto를 받는다.
+        //결과 응답
+        return ResponseEntity.status(HttpStatus.OK).body(updateDto);
+    }
+
     //4. 댓글 삭제
+    @DeleteMapping("/api/comments/{id}")
+    public ResponseEntity<CommentDto> delete(@PathVariable Long id){
+        //서비스에 위임
+        CommentDto deleteDto = commentService.delete(id); // id(번호)를 받아와 삭제한다, 결과를 CommentDto 타입의 deleteDto 변수에 저장한다
+        log.info(deleteDto.toString());
+        //결과 응답
+        return ResponseEntity.status(HttpStatus.OK).body(deleteDto);
+    }
 }

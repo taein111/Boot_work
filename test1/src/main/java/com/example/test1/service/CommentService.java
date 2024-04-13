@@ -46,4 +46,28 @@ public class CommentService {
         //4, dto로 변환해 반환
         return CommentDto.createCommentDto(created);
     }
+
+    @Transactional // update메서드 또한 db내용을 바꾸기 때문에 트랜잭션 처리해야한다.
+    public CommentDto update(Long id, CommentDto dto) {
+        // 1. 댓글 조회 및 예외 발생
+        Comment target = commentRepository.findById(id)
+                .orElseThrow(()-> new IllegalArgumentException("댓글 수정 실패 , 대상 댓글이 업습니다"));
+        // 2. 댓글 수정
+        target.patch(dto);
+        // 3. db로 갱신
+        Comment updated = commentRepository.save(target);
+        // 4. 댓글 엔티티를 dto로 변환 및 반환
+        return CommentDto.createCommentDto(updated);
+    }
+
+    @Transactional
+    public CommentDto delete(Long id) {
+        //1.댓글 조회 및 예외발생
+        Comment target = commentRepository.findById(id)//삭제할 댓글 가져오기
+                .orElseThrow(() -> new IllegalArgumentException("댓글 삭제 실패, 삭제 대상이 없습니다"));
+        //2. 댓글 삭제
+        commentRepository.delete(target);
+        //3. 삭제 댓글을 dto로 변환 및 반환
+        return CommentDto.createCommentDto(target);
+    }
 }

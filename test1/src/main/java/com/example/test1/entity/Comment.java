@@ -41,4 +41,16 @@ public class Comment {
                 dto.getBody()
         );
     }
+
+    public void patch(CommentDto dto) {
+        //예외 발생
+        if(this.id != dto.getId())//댓글 수정 요청 시 url에 있는 id와 json 데이터의 id가 다른 경우
+            throw new IllegalArgumentException("댓글 수정 실패 , 잘못된 id가 입력됐습니다.");
+        //객체 갱신
+        //수정 내용이 dto에 있으므로 이를 기존 댓글(this)에 반영한다.
+        if(dto.getNickname() != null) //수정할 닉네임 데이터가 있다면
+            this.nickname = dto.getNickname(); // 내용 반영
+        if(dto.getBody() != null) //수정할 본문 데이터가 있다면
+            this.body = dto.getBody(); // 내용 반영
+    }
 }

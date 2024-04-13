@@ -1,0 +1,51 @@
+!! 댓글 수정하기 !!
+
+1. 요청을 받아 응답할 컨트롤러 만들기 @Patch 매핑
+2. 댓글 서비스에 수정 작업을 위임한다. 반환 받은 결과를 클라이언트에 응답시킨다.
+3. 댓글 수정 작업을 서비스에 위임하기 위해 CommentService의 update(id, dto) 메서드를 호출
+	, 수정 결과는 CommentDto updateDto를 받는다
+
+ @PatchMapping("api/comments/{id}")
+    public ResponseEntity<CommentDto> update(@PathVariable Long id, @RequestBody CommentDto dto){
+        //서비스에 위임
+        CommentDto updateDto = commentService.update(id, dto);//몇번 댓글을 어떤내용으로 수정해야할지 알아야 하기때문에 id 와 dto를 받는다.
+        //결과 응답
+        return ResponseEntity.status(HttpStatus.OK).body(updateDto);
+    }
+
+
+4. 요청을 처리할 서비스 만들기
+ 1) db에 해당 댓글을 조회해 가져오고 업을 경우 예외 발생 시키기
+ 2) 가져온 댓글 내용 수정하기
+ 3) 수정한 댓글을 db에 갱신하기(수정 데이터로 덮어쓰기)
+ 4) db에 반영된 엔티티를 dto로 변환해 컨트롤러로 반환하기
+
+ @Transactional // update메서드 또한 db내용을 바꾸기 때문에 트랜잭션 처리해야한다.
+    public CommentDto update(Long id, CommentDto dto) {
+        // 1. 댓글 조회 및 예외 발생
+        Comment target = commentRepository.findById(id)
+                .orElseThrow(()-> new IllegalArgumentException("댓글 수정 실패 , 대상 댓글이 업습니다"));
+        // 2. 댓글 수정
+        target.patch(dto);
+        // 3. db로 갱신
+        Comment updated = commentRepository.save(target);
+        // 4. 댓글 엔티티를 dto로 변환 및 반환
+        return CommentDto.createCommentDto(updated);
+    }
+
+
+5. Comment 엔티티의 patch 메서드 생성
+
+ public void patch(CommentDto dto) {
+        //예외 발생
+        if(this.id != dto.getId())//댓글 수정 요청 시 url에 있는 id와 json 데이터의 id가 다른 경우
+            throw new IllegalArgumentException("댓글 수정 실패 , 잘못된 id가 입력됐습니다.");
+
+        //객체 갱신
+        //수정 내용이 dto에 있으므로 이를 기존 댓글(this)에 반영한다.
+        if(dto.getNickname() != null) //수정할 닉네임 데이터가 있다면
+            this.nickname = dto.getNickname(); // 내용 반영
+        if(dto.getBody() != null) //수정할 본문 데이터가 있다면
+            this.body = dto.getBody(); // 내용 반영
+    }
+
