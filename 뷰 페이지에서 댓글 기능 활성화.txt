@@ -1,0 +1,79 @@
+!! 웹 페이지에서 댓글 보기 !!
+-------------------------------------------------------------------------
+	------>	Rest 컨트롤러
+view  	  dto     서비스	 	<----엔티티---->        DB
+	<------	레퍼지토리
+
+---------------------------------------------------------------------------
+
+<댓글 목록 보기>
+상세페이지(SHOW) 에서 댓글 영역을 보여준다.
+1. 기존 댓글을 보여주는 영역(_list)
+2. 댓글을 입력하는 영역(_new)
+
+show 템플릿 하단에 {{>comments/_comments}} 삽입 후 _comments , _list , _new 파일 만들기
+<div id="comments-list">
+    {{#commentDtos}}
+        <div class="card" id="comments-{{id}}">
+            <div class="card-header">{{nickname}}</div>
+            <div class="card-body">{{body}}</div>
+        </div>
+    {{/commentDtos}}
+</div>
+
+==> 뷰 페이지에서 사용할 변수는 반드시 모델에 등록해야 사용할 수 있다. 
+1. article 컨트롤러에서 모델 등록하기
+1). id를 조회해 데이터 가져오기 
+- show 메서드에서 List<CommentDto> commentDtos = commentService.comments(id); 
+2) 모델에 데이터 등록하기
+ - model.addAttribute("commentDtos", commentDtos);
+
+---------------------------------------------------------------------------
+
+!! 웹 페이지에서 댓글 등록하기 !!
+
+새 댓글을 등록하기 위해서는 뷰 페이지를 만들고 자바스크립트 코드로 REST API 를 호출해야한다.
+
+1. 댓글 생성 뷰 페이지(_new)에 댓글 입력 폼 만들기
+2. [댓글 작성] 버튼 클릭해 REST API 요청 보내기
+
+
+<자바스크립트 api>
+document.querySelector(): 웹 페이지에서 특정 요소(버튼)을 찾아 반환한다.
+addEventListener(): 특정 요소에 이벤트가 발생(버튼 클릭) 했을 때 특정 동작(댓글 객체 전달)을 수행한다.
+fetch(): 웹 페이지에서 REST API 요청(POST 요청) 을 보낸다.
+
+
+1. 버튼 변수화
+ -     const commentCreateBtn = document.querySelector("#comment-create-btn");
+
+2. 버튼 이벤트 감지
+ -     commentCreateBtn.addEventListener("click", function(){
+
+3. 댓글 객체 생성 - 객체 리터럴 방식
+ - const comment = {
+            nickname: document.querySelector("#new-comment-nickname").value,
+            body: document.querySelector("#new-comment-body").value,
+            articleId: document.querySelector("#new-comment-article-id").value
+            };
+
+4. REST API 호출과 응답처리
+ : 자바스크립트로 REST API 요청을 보낼 때 fetch() 함수를 사용한다. POST 요청을 보낼 때 형식은 
+
+const url ="/api/articles/"+comment.articleId+"/comments";
+    fetch(url, {
+        method : "POST",
+        headers : {
+            "Content-Type" : "application/json"
+            },
+        body : JSON.stringify(comment)
+         }).then(response => {
+            const msg = (response.ok) ? "댓글이 등록 됐습니다." : "댓글 등록 실패";
+            alert(msg);
+            window.location.reload();
+         });
+
+----------------------------------------------------------------------------------------------
+
+!! 웹 페이지에서 댓글 수정하기 !!
+
