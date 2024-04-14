@@ -77,3 +77,7 @@ const url ="/api/articles/"+comment.articleId+"/comments";
 
 !! 웹 페이지에서 댓글 수정하기 !!
 
+1. 댓글 수정 버튼과 모달 추가하기
+ - _list.mustache 파일 안에 nickname 옆 button 태그 삽입
+
+2. 
