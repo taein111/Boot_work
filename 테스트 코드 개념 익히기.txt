@@ -1,0 +1,101 @@
+<<테스트 코드 개념 익히기>>
+
+given-when-then 패턴
+ : 테스트 코드를 세 단계로 구분해 작성하는 방식
+1. given은 테스트 실행을 준비하는 단계
+2. when은 테스트를 진행하는 단계
+3. then은 테스트 결과를 검증하는 단계.
+
+
+[JUnit] 
+JUnit이란 자바 언어를 위한 단위 테스트 프레임워크이다.
+ => 작성한 코드가 의도대로 작동하는 지 작은 단위로 검증하는 것.
+	보통 단위는 메서드가 된다. 
+	특징 : 테스트 방식을 구분할 수 있는 애너테이션 제공
+		메서드를 호출할 떄마다 새 인스턴스 생성, 독립 테스트 가능
+		예상 결과를 검증하는 어설션 메서드 제공
+		사용 방법이 단순, 테스트 코드 작성 시간이 적음
+		자동 실행, 자체 결과를 확인하고 즉각적 피드백 제공
+
+
+<<JUnit으로 단위 테스트코드 만들기>>
+@DisplayName : 테스트 이름 명시
+@Test 
+@BeforeAll() : 전체 테스트를 시작하기 전에 처음으로 한 번만 실행한다. 데이터 베이스를 연결해야하거나 테스트 환경을 초기화
+			할때 사용된다. 전체 테스트 실행 주기에서 한번만 호출되어야 하기 때문에 메서드를 static으로 선언한다.
+ 
+@BeforEach(): 테스트 케이스를 시작하기 전에 매번 실행한다. 테스트 메서드에서 사용하는 객체를 초기화하거나 테스트에 필요한
+			값을 미리 넣을 떄 사용할 수 있다. static이 아니여야 한다.
+
+@AfterAll():	 전체 테스트를 마치고 종료하기 전에 한번만 실행 , 공통적으로 사용하는 자원을 해제할 때 사용할 수 있다.
+			static 선언
+
+@AfterEach(): 각 테스트 케이스를 종료하기 전 매 번 실행. 테스트 이후에 특정 데이터를 삭제해야하는 경우. static 선언 x
+
+
+[AssertJ]
+assertThat().--
+=>
+
+isEqualTo()
+isNotEqualTo()
+contains()
+doesNotContain()
+startsWith()
+endsWith()
+isEmpty()
+isNotEmpty()
+isPositive()
+isNegative()
+isGreaterThan()
+isLessThan()
+
+
+------------------------------------------------------------------------------------------------------------
+
+<<테스트 코드 작성해보기>>
+
+ @Autowired //MockMvc 생성 및 자동 구성
+    protected MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext context;
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @BeforeEach  //테스트 실행 전 실행하는 메서드
+    public void mockMvcSetUp(){
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .build();
+    }
+
+    @AfterEach // 테스트 실행 후 실행하는 메서드
+    public void cleanUp(){
+        memberRepository.deleteAll();
+    }
+
+    @DisplayName("getAllMembers : 아티클 조회에 성공한다")
+    @Test
+    public void getAllMembers() throws Exception {
+        //given 멤버를 저장
+        final String url = "/test";
+        Member savedMember = memberRepository.save(new Member(1L, "홍길동"));
+
+        //when 멤버리스트를 조회하는 api 호출
+        final ResultActions result = mockMvc.perform(get(url) //perform 메서드는 요청을 전송하는 역할을 하는 메서드 /
+ 결과로ResultAction 객체 받으며, 이는 반환값을 검증하고 andExpect()메서드를 제공한다.
+
+               .accept(MediaType.APPLICATION_JSON)); //accept 메서드는 요청을 보낼 때 무슨 타입으로 응답을 받을지 결정하는 메서드.
+
+        //then 응답 코드가 200 ok 이고, 반환받은 값 중에 0번째 요소의 id 와 name이 저장된 값과 같은지 확인한다.
+        result
+                .andExpect(status().isOk()) //andExpect는 응답을 검증한다.
+                .andExpect(jsonPath("$[0].id").value(savedMember.getId()))
+                .andExpect(jsonPath("$[0].name").value(savedMember.getName()));
+                //응답의 0번째 값이 DB에 저장한 값과 같은 지 확인
+
+    }
+
+
+
