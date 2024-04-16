@@ -1,0 +1,32 @@
+[ORM]
+
+ORM (object-relation mapping) 은 자바의 객체와 데이터베이스를 연결하는 프로그래밍 기법.
+ORM이 있다면 데이터베이스 값을 마치 객체처럼 사용할 수 있다.
+
+
+
+
+
+
+
+빌드 디펜던시 추가
+
+	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+
+
+프로퍼티즈에서 설정 추가
+
+spring.datasource.driver-class-name=oracle.jdbc.driver.OracleDriver
+spring.datasource.url=jdbc:oracle:thin:@127.0.0.1:1521/XE
+spring.datasource.username=scott
+spring.datasource.password=tiger
+server.port=8081
+
+spring.sql.init.data-locations=classpath:data.sql
+spring.sql.init.mode=never
+spring.jpa.hibernate.ddl-auto=update
+
+
+
+오라클이니까 시퀀스 지정 (엔티티에서 ) 
+
