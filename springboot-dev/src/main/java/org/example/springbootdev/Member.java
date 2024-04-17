@@ -19,4 +19,8 @@ public class Member {
     @Column(name= "name", nullable = false)
     private String name; //DB 테이블의 'name' 컬럼과 매칭
 
+    public void changeName(String name){
+        this.name = name;
+    }
+
 }
