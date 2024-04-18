@@ -1,0 +1,114 @@
+!! 블로그 만들기 !!
+
+--------------------------------------------------------------------------------------------------------------------------
+
+1. 엔티티 구성하기 (domain  / Article.java)
+
+
+@Getter
+@NoArgsConstructor
+@Entity
+public class Article {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name= "id", updatable = false)
+    private  Long id;
+
+    @Column(name = "title", nullable = false)//title 이라는 not null 컬럼과 매핑
+    private String title;
+
+    @Column(name = "content", nullable = false)
+    private String content;
+
+    @Builder //빌더 패턴으로 객체 생성
+    public Article(String title, String content){
+        this.title=title;
+        this.content=content;
+    }
+
+}
+
+--빌드 패턴을 사용하면 어느 필드에 어떤 값이 들어가는 지 명시적으로 파악 할 수 있다. 
+예시)
+//빌더패턴을 사용하지 않았을 때
+new Article("abc","def");
+
+//빌더 패턴을 사용했을 때
+Article.builder()
+	.title("abc")
+	.content("content")
+	.build();
+
+--------------------------------------------------------------------------------------------------------------------------
+
+2. 리포지터리 만들기 (repository / BlogRepository.java)
+
+//jparepositoy를 상속 받을 때 엔티티 Article 과 엔티티의 PK 타입 Long 을 인수로 넣는다.
+public interface BlogRepository extends JpaRepository<Article, Long> {
+    
+}
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+<블로그 글 작성을 위한 api 구현>
+3. 서비스 메서드 코드 만들기 (dto 클래스 / service 클래스)
+- 블로그에 글을 추가하는 코드를 서비스 계층에 작성. 서비스 계층에서 요청을 받을 객체인 addArticleRequest
+객체를 생성하고, BlogService 클래스를 생성한 다음 블로그글 추가 메서드인 save()를 구현한다.
+
+
+
+3-1) 컨트롤러에서 요청한 본문을 받을 객체인 AddArticleRequest 파일 생성
+
+//컨트롤러에서 요청한 본문을 받을 객체
+//DAO(데이터베이스와 연결되고 데이터를 조회하고 수정하는데 사용하는 객체)
+//DTO(단순하게 데이터를 옮기기 위해 사용하는 전달자 역할- 별도의 비즈니스 로직을 포함하지 않는다.)
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+public class AddArticleRequest {
+    private String title;
+    private String content;
+
+    public Article toEntity(){ //생성자 사용해 객체 생성
+        return Article.builder()
+                .title(title)
+                .content(content)
+                .build();
+    }
+}
+
+3-2) 서비스 메서드 코드 작성하기
+
+
+@RequiredArgsConstructor //final이 붙거나 @NotNull이 붙은 필드의 생성자 추가
+@Service // 빈으로 등록
+public class BlogService {
+    private final BlogRepository blogRepository;
+
+    //블로그 글 추가 메서드
+    public Article save(AddArticleRequest request){
+        return blogRepository.save(request.toEntity());
+    }
+
+--------------------------------------------------------------------------------------------------------------------------
+
+4. 컨트롤러 메서드 코드 작성하기 ( controller 클래스 )
+
+@RequiredArgsConstructor
+@RestController // http response body에 객체 데이터를 json 형식으로 반환하는 컨트롤러
+public class BlogApiController {
+    private final BlogService blogService;
+
+    //http 메서드가 post일 때 전달받은 url과 동일하면 메서드로 매핑
+    @PostMapping("/api/articles")
+    //RequestBody로 요청 본문 값 매핑                       //컨트롤러에서 요청한 본문을 받을 객체 매개변수
+    public ResponseEntity<Article> addArticle(@RequestBody AddArticleRequest request) {
+        Article savedArticle = blogService.save(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(savedArticle);
+    }
+
+
+--------------------------------------------------------------------------------------------------------------------------
