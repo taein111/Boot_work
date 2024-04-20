@@ -28,4 +28,11 @@ public class Article {
         this.content=content;
     }
 
+
+    //엔티티에 요청받은 내용으로 값을 수정하는 메서드.  ex - (Article.update("aaa","ccc"))
+    public void update(String title, String content){
+        this.title = title;
+        this.content = content;
+    }
+
 }

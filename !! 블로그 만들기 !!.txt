@@ -1,6 +1,23 @@
 !! 블로그 만들기 !!
+1.웹 브라우저가 post 요청을 보낸다.
+2. 요청을 컨트롤러 크래스의 특정 매서드인 addArticle 메서드가 받아 서비스 클래스의 save 메서드를 실행시킨다.
+3. save 메서드에서는 레퍼지토리 클래스, 엔티티 클래스를 거쳐 실제 테이블에 데이터를 저장한다.
 
+API : 네트워크에서 API는 프로그램간에 상호작용하기 위한 매개체. 
+=> 웹사이트에서 : 구글 메인 화면을 보여줘 -> API가 요청 받아서 서버에 전달 -> 서버는 API의 요청을 처리해 결과를 만들고
+		다시 API로 전달 -> API 는 최종 결과물을 브라우저에 보내준다.
+즉, API는 클라이언트의 요청을 서버에 전달하고, 서버의 결과물을 클라이언트에게 잘 돌려주는 역할을 한다.
+
+
+REST API : 웹의 장점을 활용하는 API. 명확하고 이해하기 쉬운 API. URL 설계 방식.
+특징 : 서버 클라이언트 구조, 무상태, 캐시 처리 가능, 계층화, 인터페이스 일관성
+장점 : URL 만 보고도 무슨행동을하는 API 인지 명확하게 알 수 있다. HTTP 표준을 사용하는 모든 플랫폼에서 사용가능하다.
+	상태가 없다는 특징이 있어서 클라이언트와 서버의 역할이 명확하게 분리된다.
+단점 : GET, POST 같은 방식의 개수에 제한이 있고, 설계를 하기 위한 공식적으로 제공되는 표준 규약이 없다.
+
+==> 주소와 메서드만 보고 요청의 내용을 파악할 수 있다는 강력한 장점. 
 --------------------------------------------------------------------------------------------------------------------------
+<블로그 글 추가하기>
 
 1. 엔티티 구성하기 (domain  / Article.java)
 
@@ -39,7 +56,7 @@ Article.builder()
 	.content("content")
 	.build();
 
---------------------------------------------------------------------------------------------------------------------------
+
 
 2. 리포지터리 만들기 (repository / BlogRepository.java)
 
@@ -49,9 +66,8 @@ public interface BlogRepository extends JpaRepository<Article, Long> {
 }
 
 
---------------------------------------------------------------------------------------------------------------------------
+------------------<블로그 글 작성을 위한 api 구현>--------------------------------------------------------------------------------------------------------
 
-<블로그 글 작성을 위한 api 구현>
 3. 서비스 메서드 코드 만들기 (dto 클래스 / service 클래스)
 - 블로그에 글을 추가하는 코드를 서비스 계층에 작성. 서비스 계층에서 요청을 받을 객체인 addArticleRequest
 객체를 생성하고, BlogService 클래스를 생성한 다음 블로그글 추가 메서드인 save()를 구현한다.
@@ -91,7 +107,7 @@ public class BlogService {
         return blogRepository.save(request.toEntity());
     }
 
---------------------------------------------------------------------------------------------------------------------------
+
 
 4. 컨트롤러 메서드 코드 작성하기 ( controller 클래스 )
 
@@ -111,4 +127,135 @@ public class BlogApiController {
     }
 
 
---------------------------------------------------------------------------------------------------------------------------
+--------------------------<블로그 목록 조회하기>------------------------------------------------------------------------------------------------
+
+
+
+1. 서비스 메서드 코드 작성
+
+    public List<Article> findAll(){
+        return blogRepository.findAll();
+    }
+
+
+2. 컨트롤러 메서드 코드 작성하기.
+ 2-1. 응답을 위한 dto 먼저 생성 ( ArticleResponse)
+
+@Getter
+public class ArticleResponse {
+    private final String title;
+    private final String content;
+
+    //해당 필드를 가지는 클래스를 만든 다음, 엔티티를 인수로 받는 생성자 추가(엔티티를 받아와서 dto로 만들고, 응답하기 위해)
+    public ArticleResponse(Article article){
+        this.title = article.getTitle();
+        this.content = article.getContent();
+
+    }
+
+ 2-2. 컨트롤러에서 전체목록조회 메서드 작성
+
+  @GetMapping("/api/articles")//응답하기 위해 응답dto를 가져와서 뿌려준다.
+    public ResponseEntity<List<ArticleResponse>> findAllArticles(){
+        List<ArticleResponse> articles = blogService.findAll()
+                .stream()
+                .map(ArticleResponse::new)
+                .toList();
+
+        return ResponseEntity.ok()
+                .body(articles);
+    }
+
+
+
+
+--------------------------<블로그 글 조회하기>------------------------------------------------------------------------------------------------
+
+1. 서비스 메서드 코드 작성하기.
+
+ public Article findById(Long id){
+        return blogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("not found:" + id)) ;
+    }
+
+
+2. 컨트롤러 메서드 코드 작성하기
+
+    @GetMapping("/api/articles/{id}")
+    public ResponseEntity<ArticleResponse> findArticle(@PathVariable Long id){
+        Article article = blogService.findById(id);
+        
+        return ResponseEntity.ok()
+                .body(new ArticleResponse(article));
+    }
+
+
+==> @Pathvariable 애너테이션은 url에서 값을 가져오는 애너테이션 , 이애너테이션이 붙은 메서드의 동작 원리는 /api/article/3 의 get 요청
+	을 받으면 id에 3이 들어온다. 그리고 이 값은 앞서 만든 서비스 클래스의 findbyId 메서드로 넘어가 3번 블로그 글을 찾는다.
+	글을 찾으면 글의 정보를 body에 담아 웹 브라우저로 전송한다.
+
+
+--------------------------<블로그 글 삭제하기>------------------------------------------------------------------------------------------------
+
+1. 서비스 메서드 코드 작성하기.
+ public void Delete(Long id){
+	blogRepository.deleteById(id){
+}
+
+
+2. ,컨트롤러 메서드 코드 작성하기
+
+	@DeleteMapping("/api/aritlces/{id}")
+	public ResponseEntity<Void> dleleteArticle(@Pathvariable Long id){
+	blogService.delete(id);
+
+	return ResponseEntity.ok()
+		.build();
+
+
+
+
+--------------------------<블로그 글 수정하기>------------------------------------------------------------------------------------------------
+
+1. 엔티티클래스 에 요청 받은 내용으로 값을 수정하는 메서드 만들기 (Article 클래스)
+
+ public void update(String title, String content){
+        this.title = title;
+        this.content = content;
+    }
+
+
+2. 블로그 글 수정 요청을 받을 dto 를 작성해야한다. 
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+public class UpdateArticleRequest {
+    private String title;
+    private String content;
+    
+}
+
+
+3. dto가 완성되었으면 서비스 클래스에 레포지터리 사용해 글을 수정하는 update 메서드를 만든다.
+
+   @Transactional
+    public Article update(Long id, UpdateArticleRequest request){ //엔티티 타입을반환하는 update 메서드.
+        Article article = blogRepository.findById(id) //레포지터리의 findbyid 메서드를 통해 article에 저장된 정보를 가져온다.
+                .orElseThrow(()-> new IllegalArgumentException("not found" + id)); //없으면 exception 반환
+
+        article.update(request.getTitle(), request.getContent()); // article로 가져온 정보를 Article 클래스의 update메서드를 통해 수정한다.
+                                                                    // 이때 받는 매개변수는 UpdateArticleRequest클래스(요청 클래스)의 필드
+        return article; //수정된 엔티티를 반환한다.
+    }
+
+
+4. 서비스 클래스에 메서드를 만들었으면 컨트롤러에서 일을 시킨다.
+
+  @PutMapping("/api/articles/{id}")
+    public ResponseEntity<Article> updateArticle(@PathVariable Long id, @RequestBody UpdateArticleRequest request){
+        Article UpdatedArticle = blogService.update(id, request);
+
+        return ResponseEntity.ok()
+                .body(UpdatedArticle);
+    }
