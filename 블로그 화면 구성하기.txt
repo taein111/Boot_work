@@ -1,0 +1,135 @@
+!!블로그 화면 구성하기!!
+
+<템플릿 엔진>
+-스프링 서버에서 데이터를 받아 사용자가 보는 웹 페이지, 즉 html 상에 데이터를 넣어 보여주는 도구
+
+- 타임리프 : 스프링의 대표적 템플릿 엔진. 컨트롤러에서 모델을 통해 데이터를 설정하면, 모델은 뷰에서 사용
+		할 수 있게 데이터를 전달해준다.
+
+<표현식>
+${...} : 변수의 값 표현식
+#{...} : 속성 파일 값 표현식
+@{...} : URL 표현식
+*{...} : 선택한 변수의 표현식. th:object에서 선택한 객체에 접근
+
+<타임리프 문법>
+th:text  -  텍스트를 표현할 때 사용
+th:each :-  컬렉션을 반복할 때 사용
+th:if- 조건이 true일때만 표시
+th:unless -조건이 false일 때만 표시
+th:href -이동 경로
+th:with -변수값으로 지정
+th:object - 선택한 객체로 지정
+
+
+
+-타임리프 의존성 추가하기 
+
+dependencies{
+	    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+}
+
+
+---------------------------------------------------------------------------------------------
+블로그 글 목록 뷰 구현 하기
+
+1. 컨트롤러 메서드 작성
+ - 요청을 받아 사용자에게 뷰를 보여주려면 뷰 컨트롤러가 필요하다. 
+ - 이전 api 컨트롤러는 컨트롤러 메서드가 데이터를 직렬화한 json 문자열을 반환했지만 뷰 컨트롤러 메서드는 뷰의 이름을 반환하고,
+	모델 객체에 값을 담는다. 반환하는 값이 다를뿐 전체적 구조는 비슷하다.
+
+ - 뷰에게 데이터를 전달하기 위한 객체 생성 : dto 패키지에 ArticleViewRsponse 클래스 생성
+
+
+    //Article(엔티티)에담겨있는 데이터를 가져와 ArticleListViewResponse 객체로 만든다. (뷰에게 데이터를 전달하기 위한 객체)
+    public ArticleListViewResponse(Article article){
+        this.id = article.getId();
+        this.title =article.getTitle();
+        this.content = article.getContent();
+    }
+
+
+- BlogViewController 클래스 파일 생성 -> get매핑 받아 목록을 보여줄 메서드 생성
+	
+
+	@GetMapping("/articles")
+    public String getArticles(Model model){
+        List<ArticleListViewResponse> articles = blogservice.findAll().stream()
+                .map(ArticleListViewResponse::new)
+                .toList();
+        model.addAttribute("articles", articles);
+
+        return "articleList";
+
+
+==> articleList.html 뷰를 만들어 결과보기
+
+
+
+-엔티티 생성, 수정 시간 추가하기
+
+1). : 엔티티의 생성 및 수정시간을 자동으로 감시하고 기록하기 위해 @EntityListeners(AuditingEntityListener.class)
+
+ : 엔티티 생성될때 생성 시간을 컬럼에 저장 
+  @CreatedDate
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+ : 엔티티 수정될때 수정 시간을 컬럼에 저장
+ @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+
+2). ==> 엔티티 테이블 수정되었으니 더미데이터도 수정하기
+
+INSERT INTO article (title,content, created_at, updated_at) VALUES ('제목 1', '내용 1', NOW(), NOW())
+INSERT INTO article (title,content, created_at, updated_at) VALUES ('제목 2', '내용 2', NOW(), NOW())
+INSERT INTO article (title,content, created_at, updated_at) VALUES ('제목 3', '내용 3', NOW(), NOW())
+
+
+
+3). 엔티티를 자동으로 업데이트 하기 위해 application 클래스에 @EnableJpaAuditing 애너테이션 추가
+
+
+
+2. 컨트롤러 메서드 작성하기 
+ 2 -1. 뷰에서 사용할 dto를 만든다.
+
+@NoArgsConstructor
+@Getter
+public class ArticleViewResponse {
+
+    private Long id;
+    private String title;
+    private String content;
+    private LocalDateTime createAt;
+
+    public ArticleViewResponse(Article article){ //article 엔티티를 받아와서 뷰에 넘겨주기 위해 articleviewresponse(dto)로 반환한다.
+        this.id = article.getId();
+        this.title = article.getTitle();    
+        this.content = article.getContent();
+        this.createAt = article.getCreatedAt();
+    }
+
+
+
+
+ 2-2.  dto 를 만들었으니, 블로그 글을 반환할 컨트롤러의 메서드를 작성한다.
+ 
+  @GetMapping("/article/{id}")
+    public String getArticle(@PathVariable Long id, Model model){
+        Article article = blogservice.findById(id);
+        model.addAttribute("article", new ArticleViewResponse(article));
+        return "article";
+    }
+
+==> article.html 뷰를 만들어 결과 보기
+
+
+---------------------------------------------------------------------------------------------
+
+<삭제 기능 추가하기 >
+
+
+
