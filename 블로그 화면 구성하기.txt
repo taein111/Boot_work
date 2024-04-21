@@ -131,5 +131,108 @@ public class ArticleViewResponse {
 
 <삭제 기능 추가하기 >
 
+삭제는 자바스크립트로 진행해본다.
+
+html 에서 id를 delete-btn 으로 설정한 엘리먼트를 찾아 그 엘리먼트에서 클릭 이벤트가 발생하면 fetch() 메서드를 통해
+/api/articles/DELETE 요청을 보낸다.
 
 
+const deleteButton = document.getElementById('delete-btn');          엘리먼트 찾아서 deletebutton 변수에 저장
+ 
+if(deleteButton){
+  deleteButton.addEventListener('click', event =>{  //클릭 이벤트 함수
+        let id = document.getElementById('article-id').value;       //글 번호 저장 변수 id 
+        fetch(`/api/articles/${id}`,{   //fetch 메서드 통해서 api에 요청보내기.
+            method: 'DELETE'
+        })
+        .then(() => {
+            alert('삭제가 완료되었습니다');
+            location.replace('/articles')
+            });
+    });
+    }
+
+
+---------------------------------------------------------------------------------------------
+<수정 , 등록 기능 추가하기 >
+
+1. 수정 화면을 보여주기 위한 view 컨트롤러 메서드를 추가한다. (newAritlce())
+ 
+    @GetMapping("/new-article")
+    public String newArticle(@RequestParam(required = false) Long id, Model model){ //필수가 아닌 파라미터로 설정하기 위해 required = false
+        if (id==null) { //id 가 없으면 생성.
+            model.addAttribute("article", new ArticleViewResponse());
+        } else {//id 있으면 수정
+            Article article = blogservice.findById(id);
+            model.addAttribute("article", new ArticleViewResponse(article));
+        }
+        return "newArticle";
+    }
+
+==> 쿼리 파라미터로 넘어온 id 값은 newArticle 메서드의 Long 타입 id 인자에 매핑한다. 이 값은 없을 수도 있으므로, id 가 있으면 수정,
+id가 없으면 기본 생성자를 이용해 빈 ArticleViewResponse 객체를 만들고 id가 있으면 기존 값을 가져오는 findById 메서드 호출
+
+
+2. 컨트롤러 메서드에서 반환하는 뷰 페이지를 구현한다.
+
+
+    <article>
+		//hidden input 태그로 아이디 정보를 저장한다
+                <input type="hidden" id="article-id" th:value="${article.id}">
+
+                <header class="mb-4">
+                    <input type="text" class="form-control" placeholder="제목" id="title" th:value="${article.title}">
+                </header>
+                <section class="mb-5">
+                    <textarea class="form-control h-25" rows="10" placeholder="내용" id="content" th:text="${article.content}"></textarea>
+                </section>
+		//id가 있을 때는 수정 버튼을 , 없을 때는 등록 버튼이 보이게 한다
+                <button th:if="${article.id} != null" type="button" id="modify-btn" class="btn btn-primary btn-sm">수정</button>
+                <button th:if="${article.id} == null" type="button" id="create-btn" class="btn btn-primary btn-sm">등록</button>
+            </article>
+
+
+3. 자바스크립트로 실제로 수정, 생성 기능을 구현한다.
+
+const modifyButton = document.getElementById('modify-btn');
+
+if (modifyButton){
+    modifyButton.addEventListener('click', event =>{
+    let params = new URLSearchParams(location.search);
+    let id = params.get('id');
+
+    fetch(`/api/articles/${id}`,{
+        method: 'PUT',
+        headers: {
+        "Content-Type" : "application/json",
+        },
+        body: JSON.stringify({
+            title: document.getElementById('title').value,
+            content: document.getElementById('content').value
+            })
+    })
+    .then(() =>{
+        alert('수정이 완료되었습니다.');
+        location.replace(`/articles/${id}`);
+        });
+    });
+}
+
+const createButton = document.getElementById("create-btn");
+if(createButton){
+createButton.addEventListener("click",(event) =>{
+ fetch("/api/articles", {
+    method: "POST",
+    headers: {
+        "Content-Type":"application/json",
+        },
+        body: JSON.stringify({
+            title: document.getElementById("title").value,
+            content: document.getElementById("content").value,
+            }),
+        }).then(() =>{
+            alert("등록 완료");
+            location.replace("/articles");
+            });
+    });
+ }
