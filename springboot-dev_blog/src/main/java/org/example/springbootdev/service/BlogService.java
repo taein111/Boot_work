@@ -43,4 +43,5 @@ public class BlogService {
                                                                     // 이때 받는 매개변수는 UpdateArticleRequest클래스(요청 클래스)의 필드
         return article; //수정된 엔티티를 반환한다.
     }
+
 }

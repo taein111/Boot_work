@@ -1,0 +1,203 @@
+!!스프링 시큐리티 !!
+: 스프링 기반의 애플리케이션 보안(인증, 인가, 권한)을 담당하는 스프링 하위 프레임워크
+
+인증 : 사용자의 신원을 입증하는 과정. 
+	- 사용자가 사이트에 로그인 할 때 누구인지 확인하는 과정을 인증이라고 한다.
+
+인가 : 사이트의 특정 부분에 접근할 수 있는지 권한을 확인하는 작업.
+	- 관리자는 관리자 페이지에 들어갈 수 있지만, 일반 사용자는 관리자 페이지에 들어갈 수 없다.
+	 =>이러한 권한을 확인하는 과정
+
+==> 스프링 시큐리티를 사용하면 쉽게 처리할 수 있다.
+
+스프링 시큐리티 : 보안 관련 옵션을 제공, 애너테이션으로 설정도 쉽다. csrf 공격, 세션 고정 공격 등을 방어해주고,
+			요청 헤더도 보안 처리를 해주므로 개발자가 보안 관련 개발을 해야 하는 부담을 크게 줄여준다.
+--------------------------------------------------
+
+필터 기반으로 동작하는 스프링 시큐리티
+ - 스프링 시큐리티는 필터 기반으로 동작한다. 
+ - 각 필터에서 인증, 인가와 관련된 작업을 처리한다.
+ 
+<필터 종류>
+SecurityContentPersistenceFilter : SecurityContextRepository 에서 SecurityContext(접근 주체와 인증에 대한 정보를
+담고있는 객체)를 가져오거나 저장하는 역할.
+
+ LogoutFilter : 설정된 로그아웃 URL 로 오는 요청을 확인 해 해당 사용자를 로그아웃 처리한다.
+ 
+ UsernamePassword AuthenticationFilter :  "인증 관리자",  폼 기반 로그인을 할 때 사용되는 필터로 아이디, 패스워드
+							데이터를 파싱해 인증 요청을 위임한다. 인증이 성공하면 AuthenticationSuccessHandler
+							인증에 실패하면 AuthenticationFailureHandler
+
+DefalutLoginPageGeneratingFilter : 사용자가 로그인 페이지를 따로 지정하지 않았을 때 기본으로 설정하는 로그인 페이지 관련 필터.
+
+BasicAuthenticationFilter : 요청헤더에 있는 아이디와 패스워드를 파싱해서 인증 요청을 위임한다.
+					인증이 성공하면 AuthenticationSuccessHandler
+							인증에 실패하면 AuthenticationFailureHandler
+
+RequestCacheAwareFilter : 로그인 성공 후 , 관련 잇는 캐시 요청이 있는 지 확인하고 캐시 요청을 처리해준다. 
+				예) 로그인 하지 않은 상태로 방문했던 페이지를 기억해두었다가 로그인 이후에 그 페이지로 이동시켜준다.
+
+SecurityContextHolderAwareRequestFilter : HttpServletRequest 정보를 감싼다. 필터 체인 상의 다음 필터들에게 부가 정보를 제공하기 위									해 사용한다.
+
+AnonymousAuthentication Filter : 필터가 호출되는 시점까지 인증되지 않았다면 익명 사용자 전용 객체인 Anonymous Authentication을
+						만들어 SecurityContext에 넣어줍니다.
+
+
+SessionManagementFilter : 인증된 사용자와 관련된 세션 관련 작업을 진행한다. 세션 변조 방지 전략을 설정하고, 유효하지 않은
+					세션에 대한 처리를 하고, 세션 생성 전략을 세우는 등 작업을 처리한다.
+
+ExceptionTranslationFilter : 요청을 처리하는 중에 발생할 수 있는 예외를 위엄하거나 전달한다.
+
+FilterSecurityinterceptor : 접근 결정 관리자. AccessDisionManager로 권한 부여 처리를 위임함으로써 접근 제어 결정을 쉽게 해준다,
+					이 과정에서는 이미 사용자가 인증되어 있으므로 유효한 사용자인지 알 수 있다.
+					즉, 인가 관련 설정을 할 수 있다.
+
+
+	
+
+--------------------------------------------------
+1. /login 요청
+
+2. UserViewController 가 해당 요청에 대한 분기 처리를 하고 WebSecurityConfig 설정한 보안 관련 내용들을 실행.
+
+3. 컨트롤러가 분기처리를 하여 UserDetailsService 를 실행하면 요청을 성공했을 때 defaultSuccessUrl로 설정한
+	/articles로 리다이렉트하거나 csrf를 disable하는 등의 작업을 한다.
+
+4. UserDetailsService에서는 loadUserByUsername() 메서드를 실행하여 이메일로 유저를 찾고 반환한다.
+
+5. 유저는 직접 정의한 User클래스의 객체이고, UserRepository 에서 실제 데이터를 가져온다.
+
+--------------------------------------------------
+
+logout 요청
+  -> logout요청이 오면 UserApiController 클래스에서 로그아웃 로직을 실행한다. 
+	로그아웃 로직은 SecurityContextLogoutHander에서 제공하는 logout() 메서드를 실행한다.
+
+--------------------------------------------------
+
+<회원 도메인 만들기> 
+- 인증, 인가를 구현하기 위해 회원 정보를 저장할 테이블을 만들고 테이블과 연결할 도메인을 만든 다음, 이 테이블과 연결할 회원
+	엔티티를 만든다. 회원 엔티티와 연결되어 데이터를 조회하게 해줄 리포지터리를 만든 후 , 마지막으로 스프링 시큐리티에서 
+	사용자 정보를 가져오는 서비스를 만든다.
+
+<의존성 추가하기>
+ //스프링 시큐리티를 사용하기 위한 스타터 추가
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    //타임리프에서 스프링 시큐리티를 사용하기 위한 의존성 추가
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    //스프링 시큐리티를 테스트 하기 위한 의존성 추가
+    testImplementation 'org.springframework.security:spring-security-test'
+
+ 
+<엔티티 만들기>
+
+@Table(name = "users")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+@Entity
+public class User implements UserDetails { ///UserDetails를 상속 받아 인증 객체로 사용
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false)
+    private Long id;
+    
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+    
+    @Column(name = "password")
+    private String password;
+    
+    @Builder
+    public User(String email, String password, String auth){
+        this.email = email;
+        this.password = password;
+    }
+    
+    @Override //권한 반환
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("user"));
+    }
+    
+    // 사용자의 id를 반환(고유한 값)
+    @Override
+    public String getUsername(){
+        return email;
+    }
+    
+    //사용자의 패스워드 반환
+    @Override
+    public String getPassword(){
+        return password;
+    }
+    
+    // 계정 만료 여부 반환
+    @Override
+    public boolean isAccountNonExpired() {
+        //만료되었는지 확인하는 로직
+        return true; //만료되지 않았음
+        
+    }
+    
+    // 계정 잠금 여부 반환
+    @Override
+    public boolean isAccountNonLocked() {
+        //계정 잠금되었는지 확인하는 로직
+        return true; //true -> 만료되지 않았음
+    }
+    
+    //패스워드 만료 여부 반환
+    @Override
+    public boolean isCredentialsNonExpired() {
+        //패스워드가 만료되었는지 확인하는 로직
+        return true; //true -> 만료되지 않았음
+    }
+    
+    //계정 사용 가능 여부 반환
+    @Override
+    public boolean isEnabled() {
+        //계정이 사용 가능한지 확인하는 로직
+        return true;
+    }
+}
+
+----------------------------------------------------------------------------------------------------
+<리포지터리 만들기>
+//이메일로 사용자를 식별할 수 있다. 즉, 사용자 이름으로 봐도 된다. 따라서 사용자 정보를 가져오기 위해 스프링 시큐리티가 이메일을 전달받아야 한다.
+//스프링 데이터 jpa는 메서드 규칙에 맞춰 메서드를 선언하면 이름을 분석해 자동으로 쿼리를 생성해준다.
+// Optional<User> findByEmail(String email); = From users where email = #{email}
+
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email); //email로 사용자 정보를 가져옴
+}
+
+
+
+----------------------------------------------------------------------------------------------------
+<서비스 메서드 코드 작성하기>
+-- 엔티티와 레포지터리가 완성된 후 스프링 시큐리티에서 로그인을 진행할 때 사용자 정보를 가져오는 코드를 작성. 
+	
+
+@RequiredArgsConstructor
+@Service
+//스프링 시큐리티에서 사용자 정보를 가져오는 인터페이스
+public class UserDetailService implements UserDetailsService {
+    private final UserRepository userRepository;
+
+    //사용자 이름(email)으로 사용자의 정보를 가져오는 메서드
+@Override
+public User loadUserByUsername(String email){
+    return  userRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException(email));
+    }
+}
+
+==> 스프링 시큐리티에서 사용자의 정보를 가져오는 UserDetailsService 인터페이스를 구현한다.
+	필수로 구현해야하는 loadUserByUsername() 메서드를 오버라이딩 -> 사용자 정보를 가져오는 로직 작성
+
+
+
+
+
+
