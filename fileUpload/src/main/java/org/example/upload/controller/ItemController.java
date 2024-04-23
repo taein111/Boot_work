@@ -60,7 +60,7 @@ public class ItemController {
     public Resource downloadImage(@PathVariable String filename) throws MalformedURLException {
         return new UrlResource("file:" + fileStore.getFullPath(filename));
     }
-    @GetMapping("/attach/{itemId}")
+    @GetMapping("/attach/{itemId}") // 다운로드 컨트롤러 메서드
     public ResponseEntity<Resource> downloadAttach(@PathVariable Long itemId) throws MalformedURLException{
         Item item = itemRepository.findById(itemId);
         String storeFileName = item.getAttachFile().getStoreFileName();

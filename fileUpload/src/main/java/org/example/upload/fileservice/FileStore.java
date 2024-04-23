@@ -3,6 +3,7 @@ package org.example.upload.fileservice;
 import org.example.upload.domain.UploadFile;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Component
+@Service
 public class FileStore{
     @Value("D:/upload/")
     private String fileDir;
@@ -29,9 +30,9 @@ public class FileStore{
         mFile.transferTo(new File(getFullPath(storeFileName)));
         return new UploadFile(originalFilename, storeFileName);
     }
-    public List<UploadFile> storeFiles(List<MultipartFile>mfiles) throws IOException {
-        List<UploadFile> uploadFiles = new ArrayList<UploadFile>();
-        for (MultipartFile mFile : mfiles) {
+    public List<UploadFile> storeFiles(List<MultipartFile> mFiles) throws IOException {
+        List<UploadFile> uploadFiles = new ArrayList<>();
+        for (MultipartFile mFile : mFiles) {
             if(!mFile.isEmpty()){
                 uploadFiles.add(storeFile(mFile));
             }
@@ -43,7 +44,7 @@ public class FileStore{
         // String uuid = String.valueOf(System.currentTimeMillis());
         String uuid = UUID.randomUUID().toString();
         // a.jpg를 첨부하면 저장은 uuid.jpg로
-        return uuid + "." + extractExt(originalFilename, uuid);
+        return uuid + "." + extractExt(originalFilename, uuid); // 확장자 가져오기 (uuid.확장자)
     }
         private String extractExt(String originalFilename, String uuid) {
             int pos = originalFilename.lastIndexOf(".");
