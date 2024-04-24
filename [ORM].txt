@@ -1,0 +1,196 @@
+[ORM]
+
+ORM (object-relation mapping) 은 자바의 객체와 데이터베이스를 연결하는 프로그래밍 기법.
+ORM이 있다면 데이터베이스 값을 마치 객체처럼 사용할 수 있다.
+- sql 을 직접 사용하지 않고 사용하는 언어로, 데이터베이스에 접근할 수 있다.
+- 객체지향적으로 코드를 작성할 수 있기 때문에 비즈니스 로직에만 집중할 수 있다.
+- 데이터 베이스 시스템이 추상화 되어 있기 때문에 시스템에대한 종속성이 줄어든다.
+- 매핑하는 정보가 명확하기 때문에 ERD에 대한 의존도를 낮출 수 있고 유지보수할 때 유리하다.
+
+
+JPA와 하이버네이트
+
+-ORM의 종류, 자바에서는 JPA를 표준으로 사용한다. JPA는 자바에서 관계형 데이터베이스를 사용하는 방식을 정의한
+인터페이스, 그러므로 실제 사용을 위해서는 ORM 프레임워크를 추가로 선택해야한다. 대표적으로 하이버네이트가 있다.
+- 하이버네이트는 JPA인터페이스를 구현한 구현체이자 자바용 ORM 프레임워크이다, 내부적으로는 JDBC API 사용
+하이버네이트의 목표는 자바 객체를 통해 데이터 베이스 종류에 상관없이 데이터베이스를 자유자재로 사용할 수 있게
+하는 데 있다.
+
+애플리케이션
+	|
+스프링데이터
+	|
+      JPA
+하이버네이트
+     JDBC
+	|
+데이터베이스
+
+
+<엔티티>
+- 데이터베이스 테이블과 매핑되는 객체를 의미한다. 엔티티는 본질적으로는 자바 객체이므로 일반 객체와 다르지 않다. 하지만 데이터 베이스의 테이블과 직접 연결된다는 특별한 특징이 있어 구분지어 부른다. 
+즉, 엔티티는 객체이긴 하지만 데이터베이스 영향을 미치는 쿼리를 실행하는 객체.
+
+<엔티티 매니저>
+- 엔티티를 관리해 데이터베이스와 애플리케이션 사이에서 객체를 생성, 수정, 삭제하는 등의 역할을 한다.
+
+
+
+<스프링 데이터 JPA에서 제공하는 메서드 사용해보기>
+
+- findAll() 메서드 = Select * from member 
+
+ @Sql("/insert-members.sql")
+    @Test
+    void getAllMembers(){
+        //when
+        List<Member> members = memberRepository.findAll();
+        //select * from member
+
+        //then
+        assertThat(members.size()).isEqualTo(3);
+    }
+
+
+- findbyId()메서드 = select * from member where id = 2;
+
+@Sql("/insert-members.sql")
+    @Test
+    void getMemberById(){
+        //when
+        Member member = memberRepository.findById(2L).get();
+
+        //then
+        assertThat(member.getName()).isEqualTo("B");
+    }
+
+
+- 쿼리 메서드 : 동적 메서드 : 레포지터리에     Optional<Member> findByName(String name); 추가하면
+	JPA가 정해준 메서드 이름 규칙을 따르면 쿼리문을 특별히 구현하지 않아도 메서드처럼 사용할 수 있다.
+	(특정 컬럼으로 조회) 
+
+ @Sql("/insert-members.sql")
+    @Test
+    void getMemberByName(){
+        //when
+        Member member = memberRepository.findByName("C").get();
+
+        //then
+        assertThat(member.getId()).isEqualTo(3);
+
+    }
+
+
+--------------추가, 삭제 메서드 사용해보기 ----------------
+
+- save()메서드 = INSERT INTO member(id, name) VALUES(1, 'A);
+
+//추가된 데이터가 있으면 안되므로 @Sql 애너테이션 사용하지 않는다.
+
+@Test
+    void saveMember(){
+        //given
+        Member member = new Member(1L, "A");
+
+        //when
+        memberRepository.save(member);
+
+        //then
+        assertThat(memberRepository.findById(1L).get().getName()).isEqualTo("A");
+    }
+
+
+-- 여러 엔티티를 한꺼번에 저장하고 싶으면 -> saveAll() 메서드
+@Test
+    void saveAllMembers(){
+        List<Member> members = List.of(new Member(3L, "C"), new Member(2L, "B"));
+
+        //when
+        memberRepository.saveAll(members);
+
+        //then
+        assertThat(memberRepository.findAll().size()).isEqualTo(2);
+    }
+
+
+
+--삭제 : deleteById() 메서드 = delete from member where id=2;
+
+
+@Sql("/insert-members.sql")
+    @Test
+    void deleteMemberById() {  //delete from member where id=2;
+        //when
+        memberRepository.deleteById(2L);
+        //then
+        assertThat(memberRepository.findById(2L).isEmpty()).isTrue();
+    }
+
+
+
+--전체삭제 : deleteAll() 메서드
+@Sql("/insert-members.sql")
+    @Test
+    void deleteAllMembers() {
+        //when
+        memberRepository.deleteAll();
+
+        //then
+        assertThat(memberRepository.findAll().size()).isZero();
+
+    }
+
+-----------------------수정 메서드 사용해보기 ------------------------
+
+1. Member 엔티티에 changeName 메서드 만들기
+  public void changeName(String name){
+        this.name = name;
+    }
+
+2. 조회 하고 수정하는 메서드 만들기
+
+
+    @Sql("/insert-members.sql")
+    @Test
+    void update(){
+        //given
+        Member member = memberRepository.findById(2L).get();
+
+        //when
+        member.changeName("BC");
+
+        //then
+        assertThat(memberRepository.findById(2L).get().getName()).isEqualTo("BC");
+    }
+
+
+
+
+
+
+
+
+---------------오라클 연동하기----------------------------
+빌드 디펜던시 추가
+
+	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+
+
+프로퍼티즈에서 설정 추가
+
+spring.datasource.driver-class-name=oracle.jdbc.driver.OracleDriver
+spring.datasource.url=jdbc:oracle:thin:@127.0.0.1:1521/XE
+spring.datasource.username=scott
+spring.datasource.password=tiger
+server.port=8081
+
+spring.sql.init.data-locations=classpath:data.sql
+spring.sql.init.mode=never
+spring.jpa.hibernate.ddl-auto=update
+
+
+
+오라클이니까 시퀀스 지정 (엔티티에서 ) 
+------------------------------------------------------------------
+
+
